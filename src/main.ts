@@ -1,34 +1,53 @@
-/**
- * Some predefined delay values (in milliseconds).
- */
-export enum Delays {
-  Short = 500,
-  Medium = 2000,
-  Long = 5000,
+import fs from 'fs';
+import path from 'path';
+import {fileURLToPath} from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import { Parser } from './html.js';
+import { exit } from 'process';
+
+import gui from 'gui';
+
+
+const filePath = path.join(__dirname, '../html_folder/simple.html');
+
+const main = (): void => {
+
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+
+    const html = new Parser(data).parse();
+    console.log(html);
+
+    const win = gui.Window.create({});
+    // Quit when window is closed.
+    win.onClose = () => gui.MessageLoop.quit();
+    // The size of content view.
+    win.setContentSize({width: 400, height: 400});
+    // Put the window in the center of screen.
+    win.center();
+    const contentView = gui.Container.create();
+    const edit = gui.TextEdit.create();
+    edit.setStyle({flex: 1});
+    contentView.addChildView(edit);
+    edit.setText(JSON.stringify(html));
+
+    win.setContentView(contentView);
+
+    win.activate();
+
+    if (!process.versions.yode && !process.versions.electron) {
+      gui.MessageLoop.run()  // block until gui.MessageLoop.quit() is called
+      process.exit(0)
+    }
+
+    exit(0);
+  });
 }
 
-/**
- * Returns a Promise<string> that resolves after a given time.
- *
- * @param {string} name - A name.
- * @param {number=} [delay=Delays.Medium] - A number of milliseconds to delay resolution of the Promise.
- * @returns {Promise<string>}
- */
-function delayedHello(
-  name: string,
-  delay: number = Delays.Medium,
-): Promise<string> {
-  return new Promise((resolve: (value?: string) => void) =>
-    setTimeout(() => resolve(`Hello, ${name}`), delay),
-  );
-}
-
-// Please see the comment in the .eslintrc.json file about the suppressed rule!
-// Below is an example of how to use ESLint errors suppression. You can read more
-// at https://eslint.org/docs/latest/user-guide/configuring/rules#disabling-rules
-
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export async function greeter(name: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-  // The name parameter should be of type string. Any is used only to trigger the rule.
-  return await delayedHello(name, Delays.Long);
-}
+main();
